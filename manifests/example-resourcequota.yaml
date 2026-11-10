@@ -1,0 +1,23 @@
+# Example ResourceQuota for the DSF quota-scorer demo.
+# The scorer PromQL reads kube_resourcequota{resource="requests.cpu|memory", type="hard"}
+# and scores remaining headroom vs a fixed budget (20*24 CPU, 20*84Gi memory).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: quota-demo
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: demo-compute-quota
+  namespace: quota-demo
+  labels:
+    app.kubernetes.io/part-of: rhacm-dsf-scorer
+    app.kubernetes.io/name: example-resourcequota
+spec:
+  hard:
+    requests.cpu: "48"
+    requests.memory: 96Gi
+    limits.cpu: "96"
+    limits.memory: 192Gi
+    pods: "50"

@@ -8,7 +8,6 @@ CONF_FILE="${CONF_FILE:-$REPO_ROOT/clusters.conf}"
 
 _CLUSTER_NAMES=()
 _CLUSTER_REGIONS=()
-_CLUSTER_BIASES=()
 _LOADED=false
 
 _load() {
@@ -17,12 +16,11 @@ _load() {
     echo "ERROR: $CONF_FILE not found" >&2
     exit 1
   fi
-  while IFS=: read -r name region bias; do
+  while IFS=: read -r name region _rest; do
     [ -z "$name" ] && continue
     [[ "$name" == \#* ]] && continue
     _CLUSTER_NAMES+=("$name")
     _CLUSTER_REGIONS+=("$region")
-    _CLUSTER_BIASES+=("${bias:-0}")
   done < "$CONF_FILE"
   if [ ${#_CLUSTER_NAMES[@]} -eq 0 ]; then
     echo "ERROR: No clusters defined in $CONF_FILE" >&2
@@ -46,32 +44,6 @@ get_region() {
     fi
   done
   echo "unknown"
-}
-
-get_bias() {
-  _load
-  local target="$1"
-  for i in "${!_CLUSTER_NAMES[@]}"; do
-    if [ "${_CLUSTER_NAMES[$i]}" = "$target" ]; then
-      echo "${_CLUSTER_BIASES[$i]}"
-      return
-    fi
-  done
-  echo "0"
-}
-
-build_region_bias_json() {
-  _load
-  local json="{"
-  local first=true
-  for i in "${!_CLUSTER_NAMES[@]}"; do
-    local region="${_CLUSTER_REGIONS[$i]}"
-    local bias="${_CLUSTER_BIASES[$i]}"
-    if $first; then first=false; else json+=", "; fi
-    json+="\"$region\": $bias"
-  done
-  json+="}"
-  echo "$json"
 }
 
 first_cluster() {

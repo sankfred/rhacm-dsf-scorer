@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="refresh" content="10">
+<title>DSF Placement Scores</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+  h1 {
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: #888;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .subtitle {
+    font-size: 0.85rem;
+    color: #555;
+    margin-bottom: 3rem;
+  }
+  .clusters {
+    display: flex;
+    gap: 3rem;
+    align-items: flex-end;
+    min-height: 420px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .cluster {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 160px;
+  }
+  .score-value {
+    font-size: 2.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #e0e0e0;
+    min-height: 1.2em;
+  }
+  .bar-container {
+    width: 100%;
+    height: 300px;
+    background: #16213e;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #2a2a4a;
+  }
+  .bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    border-radius: 0 0 7px 7px;
+  }
+  .cluster-name {
+    margin-top: 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ccc;
+  }
+  .region {
+    font-size: 0.75rem;
+    color: #666;
+    margin-top: 0.25rem;
+  }
+  .winner .score-value { color: #00ff88; }
+  .winner .bar { box-shadow: 0 0 30px rgba(0, 255, 136, 0.3); }
+  .status {
+    margin-top: 3rem;
+    font-size: 0.75rem;
+    color: #666;
+    max-width: 40rem;
+    text-align: center;
+  }
+  .legend {
+    margin-top: 2.5rem;
+    font-size: 1.3rem;
+    color: #999;
+    text-align: center;
+    line-height: 2;
+    letter-spacing: 0.03em;
+  }
+</style>
+</head>
+<body>
+
+<h1>Placement Scores</h1>
+<div class="subtitle">Dynamic Scoring Framework &mdash; Live</div>
+
+<div class="clusters" id="clusters">
+__CLUSTERS_HTML__
+</div>
+
+<div class="legend">
+  Higher score = more resourcequota headroom<br>
+  Placement picks the highest-scoring cluster
+</div>
+
+<div class="status" id="status">__STATUS_HTML__</div>
+
+<script>
+// Live refresh over HTTP (optional). Static markup above already has the scores.
+(function () {
+  if (location.protocol === 'file:') return;
+
+  function scoreColor(score, isWinner) {
+    if (isWinner) return '#00ff88';
+    if (score >= 80) return '#4CAF50';
+    if (score >= 60) return '#FFC107';
+    if (score >= 40) return '#FF9800';
+    return '#F44336';
+  }
+
+  function render(data) {
+    if (!Array.isArray(data) || !data.length) return;
+    const byCluster = {};
+    data.forEach(d => {
+      const score = Number(d.score);
+      if (!d.cluster || Number.isNaN(score)) return;
+      byCluster[d.cluster] = { score: score, dimension: d.dimension || '' };
+    });
+    const names = Object.keys(byCluster);
+    if (!names.length) return;
+    const winner = names.reduce((a, b) => byCluster[a].score >= byCluster[b].score ? a : b);
+    const container = document.getElementById('clusters');
+    container.innerHTML = names.map(name => {
+      const info = byCluster[name];
+      const isWinner = name === winner;
+      const color = scoreColor(info.score, isWinner);
+      const pct = Math.max(0, Math.min(100, info.score));
+      const cls = isWinner ? 'cluster winner' : 'cluster';
+      return (
+        '<div class="' + cls + '" id="c-' + name + '">' +
+          '<div class="score-value" style="color:' + color + '">' + Math.round(info.score) + '</div>' +
+          '<div class="bar-container"><div class="bar" style="height:' + pct + '%;background:' + color + '"></div></div>' +
+          '<div class="cluster-name">' + name + '</div>' +
+          '<div class="region">' + info.dimension + '</div>' +
+        '</div>'
+      );
+    }).join('');
+    document.getElementById('status').textContent =
+      'Last update: ' + new Date().toLocaleTimeString();
+  }
+
+  function poll() {
+    fetch('scores.json?t=' + Date.now())
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(render)
+      .catch(() => {})
+      .finally(() => setTimeout(poll, 5000));
+  }
+  setTimeout(poll, 5000);
+})();
+</script>
+</body>
+</html>

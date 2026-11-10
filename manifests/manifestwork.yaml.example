@@ -58,19 +58,19 @@ spec:
               serviceAccountName: rhacm-scorer
               containers:
                 - name: rhacm-scorer
-                  image: quay.io/augustrh/rhacm-dsf-scorer:latest
+                  image: quay.io/sfredenb/quota-scorer:latest
                   imagePullPolicy: Always
                   ports:
                     - containerPort: 8000
                   env:
+                    - name: PORT
+                      value: "8000"
                     - name: PROMETHEUS_HOST
                       value: "https://thanos-querier.openshift-monitoring.svc:9091"
                     - name: PROMETHEUS_QUERY
-                      value: 'avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100'
-                    - name: CLUSTER_REGION
-                      value: "<YOUR_CLUSTER_REGION>"
-                    - name: REGION_BIAS
-                      value: '<REGION_BIAS_JSON>'
+                      value: 'min((((20*24) - (max(sum(kube_resourcequota{resource="requests.cpu", type="hard"}))) or on() vector(0)) / (20*24)) or (((20*8.4e+10) - (max(sum(kube_resourcequota{resource="requests.memory", type="hard"}))) or on() vector(0)) / (20*8.4e+10)))'
+                    - name: SCORE_NAME
+                      value: cpu_mem_quota_pct_score
 
       - apiVersion: v1
         kind: Service

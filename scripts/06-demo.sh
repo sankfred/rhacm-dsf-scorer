@@ -9,6 +9,27 @@ source "$SCRIPT_DIR/lib.sh"
 
 MANIFESTS_DIR="$REPO_ROOT/manifests"
 ACTION="${1:-watch}"
+WATCH_INTERVAL="${WATCH_INTERVAL:-10}"
+
+print_scores() {
+  local timestamp
+  timestamp=$(date +%H:%M:%S)
+  echo "=== Scores @ ${timestamp} ==="
+  for cluster in $(cluster_names); do
+    local score_output
+    score_output=$(oc get addonplacementscores cpu-mem-quota-pct-score -n "$cluster" \
+      -o jsonpath='{range .status.scores[*]}{.name}={.value}{" "}{end}' 2>/dev/null || true)
+    if [ -z "$score_output" ]; then
+      score_output=$(oc get addonplacementscores -n "$cluster" \
+        -o jsonpath='{range .items[*].status.scores[*]}{.name}={.value}{" "}{end}' 2>/dev/null || true)
+    fi
+    if [ -n "$score_output" ]; then
+      echo "  $cluster  ${score_output}"
+    else
+      echo "  $cluster  (no scores yet)"
+    fi
+  done
+}
 
 case "$ACTION" in
   start)
@@ -21,7 +42,7 @@ case "$ACTION" in
     echo "=== Starting load generator on $LOAD_CLUSTER ==="
     echo "This will drive CPU usage up, lowering ${LOAD_CLUSTER}'s score."
     KUBECONFIG="$LOAD_KUBECONFIG" oc apply -f "$MANIFESTS_DIR/load-generator.yaml"
-    echo "Load generator applied. Watch scores shift with: bash scripts/06-demo.sh scores"
+    echo "Load generator applied. Watch scores shift with: bash scripts/06-demo.sh watch"
     ;;
   stop)
     LOAD_CLUSTER="${2:-$(first_cluster)}"
@@ -31,28 +52,22 @@ case "$ACTION" in
     echo "Load generator removed. Scores will recover within ~60s."
     ;;
   watch)
-    echo "=== Watching AddOnPlacementScores (Ctrl+C to stop) ==="
+    echo "=== Watching placement scores every ${WATCH_INTERVAL}s (Ctrl+C to stop) ==="
     echo ""
-    oc get addonplacementscores -A --watch
+    while true; do
+      print_scores
+      echo ""
+      sleep "$WATCH_INTERVAL"
+    done
     ;;
   scores)
-    echo "=== Current scores ==="
-    for cluster in $(cluster_names); do
-      echo ""
-      echo "--- $cluster ---"
-      SCORE_OUTPUT=$(oc get addonplacementscores rhacm-cpu-score -n "$cluster" -o jsonpath='{range .status.scores[*]}  {.name}: {.value}{"\n"}{end}' 2>/dev/null)
-      if [ -n "$SCORE_OUTPUT" ]; then
-        echo "$SCORE_OUTPUT"
-      else
-        echo "  No scores yet"
-      fi
-    done
+    print_scores
     ;;
   *)
     echo "Usage: bash scripts/06-demo.sh [start|stop|watch|scores] [cluster]"
     echo "  start [cluster]  — apply load generator (default: $(first_cluster))"
     echo "  stop  [cluster]  — remove load generator"
-    echo "  watch            — live-stream AddOnPlacementScores"
+    echo "  watch            — refresh score values every ${WATCH_INTERVAL}s"
     echo "  scores           — snapshot current scores"
     ;;
 esac

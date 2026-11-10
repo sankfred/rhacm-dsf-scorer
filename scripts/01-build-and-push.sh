@@ -4,14 +4,14 @@
 
 set -euo pipefail
 
-IMAGE="${1:-quay.io/augustrh/rhacm-dsf-scorer:latest}"
+IMAGE="${1:-quay.io/sfredenb/quota-scorer:latest}"
 
 echo "=== Step 1: Build and Push ==="
 echo "Image: $IMAGE"
 
 cd "$(dirname "$0")/.."
 
-podman build --platform linux/amd64 -t "$IMAGE" .
+podman build --platform linux/amd64 -t "$IMAGE" -f quota-scorer/Dockerfile quota-scorer
 echo ""
 echo "Built. Pushing..."
 podman push "$IMAGE"

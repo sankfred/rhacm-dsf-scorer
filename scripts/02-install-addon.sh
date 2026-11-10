@@ -46,12 +46,8 @@ oc patch clustermanagementaddon dynamic-scoring-framework --type=json -p='[
   {"op": "replace", "path": "/spec/installStrategy/placements/0/namespace", "value": "open-cluster-management-global-set"}
 ]'
 
-# Link the AddonDeploymentConfig so the agent deploys into dynamic-scoring namespace
-# (where the prometheus-token secret lives), not the default agent-addon namespace.
-echo "Linking AddonDeploymentConfig..."
-oc patch clustermanagementaddon dynamic-scoring-framework --type=json -p='[
-  {"op": "add", "path": "/spec/supportedConfigs/0/defaultConfig", "value": {"name": "dynamic-scoring-addon-config", "namespace": "open-cluster-management"}}
-]'
+# Newer chart versions already wire AddonDeploymentConfig via installStrategy
+# (agentInstallNamespace=dynamic-scoring). Skip obsolete supportedConfigs patch.
 
 echo ""
 echo "Waiting for addon to deploy to managed clusters..."

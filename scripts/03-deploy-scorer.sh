@@ -15,12 +15,12 @@ GENERATED_DIR="$MANIFESTS_DIR/generated"
 TEMPLATE="$MANIFESTS_DIR/manifestwork.yaml.example"
 
 CLUSTERS="${@:-$(cluster_names)}"
-REGION_BIAS_JSON=$(build_region_bias_json)
+IMAGE="${IMAGE:-quay.io/sfredenb/quota-scorer:latest}"
 
 mkdir -p "$GENERATED_DIR"
 
-echo "=== Step 3+4: Deploy Scorer ==="
-echo "REGION_BIAS: $REGION_BIAS_JSON"
+echo "=== Step 3+4: Deploy Quota Scorer ==="
+echo "IMAGE: $IMAGE"
 
 for cluster in $CLUSTERS; do
   echo ""
@@ -43,16 +43,15 @@ for cluster in $CLUSTERS; do
     echo "ERROR: Could not get apps domain for $cluster"
     continue
   fi
-  echo "Apps domain: $APPS_DOMAIN"
+  echo "Apps domain: $APPS_DOMAIN (region: $REGION)"
 
   # Generate manifest from template
   echo "Generating ManifestWork from template..."
   cp "$TEMPLATE" "$MANIFEST"
 
   sed -i.bak "s|<YOUR_MANAGED_CLUSTER_NAME>|${cluster}|g" "$MANIFEST"
-  sed -i.bak "s|<YOUR_CLUSTER_REGION>|${REGION}|g" "$MANIFEST"
   sed -i.bak "s|apps.<YOUR_CLUSTER_DOMAIN>|${APPS_DOMAIN}|g" "$MANIFEST"
-  sed -i.bak "s|<REGION_BIAS_JSON>|${REGION_BIAS_JSON}|g" "$MANIFEST"
+  sed -i.bak "s|quay.io/sfredenb/quota-scorer:latest|${IMAGE}|g" "$MANIFEST"
   rm -f "$MANIFEST.bak"
 
   # First apply — creates SA, service, route (token placeholder is fine)
@@ -87,7 +86,7 @@ for cluster in $CLUSTERS; do
   echo "Re-applying ManifestWork with token..."
   oc apply -f "$MANIFEST"
 
-  echo "[$cluster] Done — region: $REGION, domain: $APPS_DOMAIN"
+  echo "[$cluster] Done — domain: $APPS_DOMAIN"
 done
 
 echo ""

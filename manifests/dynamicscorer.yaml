@@ -1,15 +1,15 @@
 apiVersion: dynamic-scoring.open-cluster-management.io/v1alpha1
 kind: DynamicScorer
 metadata:
-  name: rhacm-cpu-scorer
+  name: quota-scorer
   namespace: open-cluster-management
 spec:
-  description: CPU idle score from OCP built-in cluster monitoring
-  configURL: <CONFIGURL_SET_BY_04_REGISTER_SCORER>
+  description: CPU/memory resourcequota headroom score (higher = more quota remaining)
+  configURL: http://rhacm-scorer-dynamic-scoring.apps.cluster1.sandbox2096.opentlc.com/config
   configSyncMode: Full
   location: Internal
   scoreDestination: AddOnPlacementScore
-  scoreDimensionFormat: "${node}"
+  scoreDimensionFormat: "${scoreName}"
   source:
     host: https://thanos-querier.openshift-monitoring.svc:9091
     path: /api/v1/query_range

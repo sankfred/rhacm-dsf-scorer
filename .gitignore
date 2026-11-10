@@ -3,3 +3,8 @@ __pycache__/
 *.pyc
 .env
 dashboard/scores.json
+dashboard/scores.js
+# Generated from dashboard-src/app.html by scripts/dashboard.sh
+dashboard/index.html
+*.tar.gz
+._*

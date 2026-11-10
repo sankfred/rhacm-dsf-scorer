@@ -13,13 +13,15 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib.sh"
 
 echo "========================================="
-echo "  DSF Demo Setup — KubeCon Japan 2026"
+echo "  DSF Quota Scorer Setup"
 echo "========================================="
 echo ""
 echo "Clusters from clusters.conf:"
 for name in $(cluster_names); do
-  echo "  $name  ($(get_region "$name"), bias=$(get_bias "$name"))"
+  echo "  $name  ($(get_region "$name"))"
 done
+echo ""
+echo "Image default: quay.io/sfredenb/quota-scorer:latest"
 echo ""
 
 # Pre-flight
