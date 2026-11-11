@@ -1,0 +1,30 @@
+apiVersion: cluster.open-cluster-management.io/v1beta2
+kind: ManagedClusterSetBinding
+metadata:
+  name: global
+  namespace: dynamic-scoring
+spec:
+  clusterSet: global
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: quota-scorer-placement
+  namespace: dynamic-scoring
+spec:
+  clusterSets:
+  - global
+  tolerations:
+  - key: cluster.open-cluster-management.io/unreachable
+    operator: Equal
+  - key: cluster.open-cluster-management.io/unavailable
+    operator: Equal
+  prioritizerPolicy:
+    mode: Exact
+    configurations:
+    - scoreCoordinate:
+        type: AddOn
+        addOn:
+          resourceName: cpu-mem-quota-pct-score
+          scoreName: cpu_mem_quota_pct_score
+      weight: 1
