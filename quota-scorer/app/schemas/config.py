@@ -20,6 +20,9 @@ class ScoringParams(BaseModel):
 
 
 class ScoringConfig(BaseModel):
+    # In-cluster Service URL so every managed cluster scores locally
+    # (not via the hub configURL Route host).
+    host: str
     path: str
     params: ScoringParams
 

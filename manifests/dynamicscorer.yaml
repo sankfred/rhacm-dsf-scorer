@@ -18,4 +18,6 @@ spec:
         name: prometheus-token
         key: token
   scoring:
+    # Per-cluster in-cluster Service (synced from /config). Do not point at a single cluster Route.
+    host: http://rhacm-scorer.dynamic-scoring.svc:8000
     path: /scoring

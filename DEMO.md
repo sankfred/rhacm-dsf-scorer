@@ -59,5 +59,5 @@ bash scripts/06-demo.sh scores
 bash scripts/06-demo.sh watch
 bash scripts/06-demo.sh start cluster1
 bash scripts/06-demo.sh stop cluster1
-oc get addonplacementscores -A
+oc get addonplacementscores -A -o custom-columns="CLUSTER:.metadata.namespace,REGION:.status.scores[0].ame,SCORE:.status.scores[0].value"
 ```

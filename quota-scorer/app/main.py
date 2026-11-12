@@ -154,6 +154,12 @@ PROMETHEUS_QUERY = os.getenv(
     'min((((20*24) - (max(sum(kube_resourcequota{resource="requests.cpu", type="hard"}))) or on() vector(0)) / (20*24)) or (((20*8.4e+10) - (max(sum(kube_resourcequota{resource="requests.memory", type="hard"}))) or on() vector(0)) / (20*8.4e+10)))',
 )
 SCORE_NAME = os.getenv("SCORE_NAME", "cpu_mem_quota_pct_score")
+# Agents on every managed cluster must call the local Service — if this is
+# omitted, DSF derives scoringEndpoint from configURL and all spokes hit one Route.
+SCORING_HOST = os.getenv(
+    "SCORING_HOST",
+    "http://rhacm-scorer.dynamic-scoring.svc:8000",
+)
 
 app = FastAPI()
 
@@ -197,6 +203,7 @@ async def get_config():
             },
         },
         "scoring": {
+            "host": SCORING_HOST,
             "path": "/scoring",
             "params": {
                 "name": SCORE_NAME,

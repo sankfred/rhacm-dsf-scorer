@@ -35,4 +35,5 @@ oc apply -f "$MANIFESTS_DIR/dynamicscoringconfig.yaml"
 
 echo ""
 echo "Done. DynamicScorer and DynamicScoringConfig applied."
-echo "The hub controller will start calling /config from the primary cluster's Route."
+echo "Hub pulls /config from the primary cluster Route; /config must advertise"
+echo "scoring.host=http://rhacm-scorer.dynamic-scoring.svc:8000 so each spoke scores locally."
