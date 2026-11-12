@@ -42,11 +42,32 @@ for cluster in $CLUSTERS; do
   # ConfigMap
   echo "  ConfigMap:"
   KUBECONFIG="$KUBECONFIG_FILE" oc get configmap dynamic-scoring-config -n dynamic-scoring 2>/dev/null && echo "    Present" || echo "    Not found (may take ~1 min)"
+
+  # Baseline example ResourceQuota (small quota should exist for non-zero scores;
+  # score 0 often means no quotas present or quota is at full capacity)
+  echo "  Example ResourceQuota:"
+  KUBECONFIG="$KUBECONFIG_FILE" oc get resourcequota demo-compute-quota -n quota-demo 2>/dev/null \
+    || echo "    Not found (apply manifests/example-resourcequota.yaml)"
 done
 
 echo ""
 echo "--- AddOnPlacementScores (hub) ---"
-oc get addonplacementscores -A 2>/dev/null || echo "None found yet (agent fires every 60s)"
+label_aps_regions
+oc get addonplacementscores -A -o custom-columns="CLUSTER:.metadata.namespace,REGION:.metadata.labels.region,NAME:.metadata.name,SCORE:.status.scores[0].value" 2>/dev/null \
+  || oc get addonplacementscores -A 2>/dev/null \
+  || echo "None found yet (agent fires every 60s)"
+
+echo ""
+echo "--- Placement (dynamic-scoring/quota-scorer-placement) ---"
+if oc get placement quota-scorer-placement -n dynamic-scoring >/dev/null 2>&1; then
+  oc get placement quota-scorer-placement -n dynamic-scoring
+  oc get placementdecision -n dynamic-scoring \
+    -l cluster.open-cluster-management.io/placement=quota-scorer-placement \
+    -o jsonpath='{range .items[*].status.decisions[*]}{.clusterName}{"\n"}{end}' 2>/dev/null \
+    | sed 's/^/  decided: /'
+else
+  echo "  Not found — run: oc apply -f manifests/placement-quota-scorer.yaml"
+fi
 
 echo ""
 echo "=== Verification complete ==="

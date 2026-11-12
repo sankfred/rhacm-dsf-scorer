@@ -1,0 +1,26 @@
+# Large ResourceQuota used by `bash scripts/06-demo.sh start` to consume
+# quota headroom on a managed cluster (lowers cpu_mem_quota_pct_score).
+# Scorer budget is ~480 CPU / ~1564Gi; this claim leaves little remaining.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: load-quota
+  labels:
+    app.kubernetes.io/part-of: rhacm-dsf-scorer
+    app.kubernetes.io/name: load-quota
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: load-quota
+  namespace: load-quota
+  labels:
+    app.kubernetes.io/part-of: rhacm-dsf-scorer
+    app.kubernetes.io/name: load-quota
+spec:
+  hard:
+    requests.cpu: "400"
+    requests.memory: 1400Gi
+    limits.cpu: "800"
+    limits.memory: 2800Gi
+    pods: "200"

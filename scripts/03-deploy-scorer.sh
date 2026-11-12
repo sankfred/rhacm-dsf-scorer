@@ -86,9 +86,17 @@ for cluster in $CLUSTERS; do
   echo "Re-applying ManifestWork with token..."
   oc apply -f "$MANIFEST"
 
+  # A small baseline ResourceQuota should exist so the scorer has something to
+  # measure. A score of 0 often means no ResourceQuotas are present (or quota
+  # hard limits already fill the configured capacity budget).
+  echo "Applying example ResourceQuota (baseline headroom for scoring)..."
+  KUBECONFIG="$KUBECONFIG_FILE" oc apply -f "$MANIFESTS_DIR/example-resourcequota.yaml"
+
   echo "[$cluster] Done — domain: $APPS_DOMAIN"
 done
 
 echo ""
 echo "=== Scorer deployment complete ==="
 echo "Generated manifests are in $GENERATED_DIR (not committed to git)."
+echo "Baseline ResourceQuota applied from manifests/example-resourcequota.yaml on each cluster."
+echo "Note: score 0 usually means no quotas present, or quota is at full capacity vs the scorer budget."

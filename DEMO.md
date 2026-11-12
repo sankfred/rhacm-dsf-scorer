@@ -38,7 +38,7 @@ curl -s $SCORER/config | python3 -m json.tool
 
 > "Both clusters publish quota headroom scores. Higher means more remaining request quota. Placement can prefer the cluster with greater capacity."
 
-## Beat 2 — Load shifts relative capacity
+## Beat 2 — Large quota shifts relative capacity
 
 ```bash
 bash scripts/06-demo.sh start cluster1
@@ -46,7 +46,7 @@ bash scripts/06-demo.sh scores
 bash scripts/06-demo.sh watch
 ```
 
-> "Drive load on a cluster and watch how fleet scores react. Cleanup:"
+> "Apply a large ResourceQuota on a cluster — that consumes headroom and drops its score. Cleanup:"
 
 ```bash
 bash scripts/06-demo.sh stop cluster1
@@ -59,5 +59,7 @@ bash scripts/06-demo.sh scores
 bash scripts/06-demo.sh watch
 bash scripts/06-demo.sh start cluster1
 bash scripts/06-demo.sh stop cluster1
-oc get addonplacementscores -A -o custom-columns="CLUSTER:.metadata.namespace,NAME:.metadata.name,REGION:.status.scores[0].name,SCORE:.status.scores[0].value"
+bash scripts/06-demo.sh placement
+# Region comes from the `region` label (stamped from clusters.conf by scripts/06-demo.sh scores)
+oc get addonplacementscores -A -o custom-columns="CLUSTER:.metadata.namespace,REGION:.metadata.labels.region,NAME:.metadata.name,SCORE:.status.scores[0].value"
 ```

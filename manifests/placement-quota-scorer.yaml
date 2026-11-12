@@ -14,6 +14,12 @@ metadata:
 spec:
   clusterSets:
   - global
+  predicates:
+  - requiredClusterSelector:
+      labelSelector:
+        matchExpressions:
+        - key: local-cluster
+          operator: DoesNotExist
   tolerations:
   - key: cluster.open-cluster-management.io/unreachable
     operator: Equal

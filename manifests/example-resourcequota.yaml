@@ -1,6 +1,11 @@
 # Example ResourceQuota for the DSF quota-scorer demo.
-# The scorer PromQL reads kube_resourcequota{resource="requests.cpu|memory", type="hard"}
-# and scores remaining headroom vs a fixed budget (20*24 CPU, 20*84Gi memory).
+# Applied by scripts/03-deploy-scorer.sh (and setup-all.sh) on each managed cluster.
+#
+# A small quota should exist so the scorer has headroom to measure. The PromQL
+# reads kube_resourcequota{resource="requests.cpu|memory", type="hard"} and
+# scores remaining capacity vs a fixed budget (20*24 CPU, 20*84Gi memory).
+# A score of 0 usually means no ResourceQuotas are present, or hard limits
+# already fill that budget.
 apiVersion: v1
 kind: Namespace
 metadata:

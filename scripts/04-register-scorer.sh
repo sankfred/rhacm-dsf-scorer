@@ -34,6 +34,10 @@ oc apply -f "$MANIFESTS_DIR/dynamicscorer.yaml"
 oc apply -f "$MANIFESTS_DIR/dynamicscoringconfig.yaml"
 
 echo ""
-echo "Done. DynamicScorer and DynamicScoringConfig applied."
+echo "Applying quota-scorer Placement (excludes local-cluster)..."
+oc apply -f "$MANIFESTS_DIR/placement-quota-scorer.yaml"
+
+echo ""
+echo "Done. DynamicScorer, DynamicScoringConfig, and Placement applied."
 echo "Hub pulls /config from the primary cluster Route; /config must advertise"
 echo "scoring.host=http://rhacm-scorer.dynamic-scoring.svc:8000 so each spoke scores locally."

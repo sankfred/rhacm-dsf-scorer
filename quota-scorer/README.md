@@ -297,3 +297,56 @@ Check addonplacementscore:
 kubectl get addonplacementscores -A
 ```
 
+
+## PromQL capacity model (`20 × ?`)
+
+The default Prometheus query is **not** calculated from live node inventory. The `20` is a **hardcoded assumed node count**; `24` and `~84Gi` are **hardcoded per-node sizes**. Together they form a fixed cluster capacity budget.
+
+### Formula (intended meaning)
+
+**CPU budget** = `20 × 24` = **480 cores**  
+**Memory budget** = `20 × 8.4e10` bytes ≈ **20 × ~78–84 Gi** ≈ **~1.5–1.6 Ti**
+
+For each dimension:
+
+```text
+ratio = (budget − sum of ResourceQuota hard limits) / budget
+```
+
+- Prometheus reads `kube_resourcequota{resource="requests.cpu|memory", type="hard"}` (quota **hard** caps, not live pod usage).
+- Missing quota → treated as `0` claimed (`or on() vector(0)`).
+- The scorer then does `score = 100 × max(ratio over the time window)` → 0–100.
+
+So with the example quota (`48` CPU / `96Gi`):
+
+- CPU headroom ≈ `(480 − 48) / 480` ≈ **0.90** → score **~90**
+
+### What `20` is
+
+| Piece | Meaning |
+|--------|--------|
+| `20` | Assumed number of worker/capacity units (nodes) |
+| `24` | Assumed CPU cores **per** unit |
+| `8.4e10` | Assumed memory bytes **per** unit (~78 Gi; docs often round to ~84 Gi) |
+
+There is **no** `count(kube_node_info)` (or similar) in the query. On single-node OpenShift clusters the budget is still “as if” there were **20** nodes × those sizes.
+
+Override via the `PROMETHEUS_QUERY` env var (see Deployment / ManifestWork) if you want the model to match real cluster size.
+
+### Default query
+
+```promql
+min(
+  (
+    ((20*24) - (max(sum(kube_resourcequota{resource="requests.cpu", type="hard"}))) or on() vector(0))
+    / (20*24)
+  )
+  or
+  (
+    ((20*8.4e+10) - (max(sum(kube_resourcequota{resource="requests.memory", type="hard"}))) or on() vector(0))
+    / (20*8.4e+10)
+  )
+)
+```
+
+A score of **0** usually means no ResourceQuotas are present, or hard limits already fill the configured capacity budget.

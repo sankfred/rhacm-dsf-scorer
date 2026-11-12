@@ -50,3 +50,16 @@ first_cluster() {
   _load
   echo "${_CLUSTER_NAMES[0]}"
 }
+
+# Stamp region from clusters.conf onto AddOnPlacementScore objects so
+# `oc get ... -o custom-columns=...REGION:.metadata.labels.region` works.
+label_aps_regions() {
+  _load
+  local cluster region
+  for cluster in "${_CLUSTER_NAMES[@]}"; do
+    region="$(get_region "$cluster")"
+    [ -z "$region" ] || [ "$region" = "unknown" ] && continue
+    oc label addonplacementscores -n "$cluster" --all \
+      "region=${region}" --overwrite >/dev/null 2>&1 || true
+  done
+}
