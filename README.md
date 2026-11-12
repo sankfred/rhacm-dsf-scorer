@@ -7,27 +7,32 @@ Scores managed clusters by **resourcequota headroom** (CPU/memory requests remai
 Based on the [augustrh/rhacm-dsf-scorer](https://github.com/augustrh/rhacm-dsf-scorer) demo layout, adapted to the **quota-scorer** implementation under `quota-scorer/`.
 
 ## How it works
-                          Hub
-                           │
-                    DynamicScorer CR
-                    (configURL → /config)
-                           │
-          ┌────────┬───────┼───────┬────────┐
-          ▼        ▼       ▼       ▼        ▼
-     ┌────────┐┌────────┐┌────────┐┌────────┐
-     │tokyo   ││singapore││useast ││uswest  │
-     │ap-ne-1 ││ap-se-1  ││us-e-1 ││us-w-2  │
-     ├────────┤├────────┤├────────┤├────────┤
-     │Prom─►Ag││Prom─►Ag││Prom─►Ag││Prom─►Ag│
-     │   ↓    ││   ↓    ││   ↓    ││   ↓    │
-     │ Scorer ││ Scorer ││ Scorer ││ Scorer │
-     └───┬────┘└───┬────┘└───┬────┘└───┬────┘
-         │         │         │         │
-         ▼         ▼         ▼         ▼
-     AddOnPlacementScore (per cluster on hub)
-                           │
-                    Placement Decision
-                    (highest score wins)
+
+```
+                                 Hub
+                                  │
+                           DynamicScorer CR
+                           (configURL → /config)
+                                  │
+              ┌───────────────────┼───────────────────┐
+              ▼                   ▼                   ▼
+     ┌────────────────┐  ┌────────────────┐  ┌────────────────┐
+     │ cluster1       │  │ cluster2       │  │ clusterN       │
+     │ us-east-2      │  │ us-west-2      │  │ <region>       │
+     ├────────────────┤  ├────────────────┤  ├────────────────┤
+     │ Prom → Agent   │  │ Prom → Agent   │  │ Prom → Agent   │
+     │      ↓         │  │      ↓         │  │      ↓         │
+     │    Scorer      │  │    Scorer      │  │    Scorer      │
+     └───────┬────────┘  └───────┬────────┘  └───────┬────────┘
+             │                   │                   │
+             ▼                   ▼                   ▼
+             AddOnPlacementScore (per cluster on hub)
+                                  │
+                           Placement Decision
+                           (highest score wins)
+```
+
+Add more spokes in `clusters.conf` as `clusterN:<region>`; each gets the same agent → local scorer path.
 
 1. The DSF agent on each managed cluster queries Prometheus with a resourcequota PromQL expression
 2. Agent POSTs the time series to the scorer `/scoring` endpoint

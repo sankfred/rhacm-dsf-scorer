@@ -172,9 +172,13 @@ async def scoring_timeseries(payload: ScoringPayload, request: Request):
   data = payload.data
   results = []
   for series in data:
-      # Compute a max over the range as the score
+      # Use the latest sample — max() over the hour kept scores sticky after
+      # quota changes (old high headroom samples dominated for up to `range`).
       try:
-          results.append({"metric": series.metric, "score": 100*max(float(v[1]) for v in series.values)})
+          if not series.values:
+              continue
+          latest = float(series.values[-1][1])
+          results.append({"metric": series.metric, "score": 100 * latest})
 
       except Exception as e:
           logging.error(f"Error processing series: {e}")
