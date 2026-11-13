@@ -1,6 +1,8 @@
-# Large ResourceQuota used by `bash scripts/06-demo.sh start` to consume
-# quota headroom on a managed cluster (lowers cpu_mem_quota_pct_score).
-# Scorer budget is ~480 CPU / ~1564Gi; this claim leaves little remaining.
+# ResourceQuota template used by `bash scripts/06-demo.sh start`.
+# The demo script randomly sizes this to ~30% or ~50% of the scorer budget
+# (40% ± 10 score points of headroom) so clusters can show different scores.
+#
+# Scorer budget: 20*24 = 480 CPU, ~1680Gi memory.
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -19,8 +21,8 @@ metadata:
     app.kubernetes.io/name: load-quota
 spec:
   hard:
-    requests.cpu: "400"
-    requests.memory: 1400Gi
-    limits.cpu: "800"
-    limits.memory: 2800Gi
+    requests.cpu: "192"      # overwritten by 06-demo.sh start (±10 score sizing)
+    requests.memory: 672Gi
+    limits.cpu: "384"
+    limits.memory: 1344Gi
     pods: "200"

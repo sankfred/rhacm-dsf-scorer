@@ -195,7 +195,7 @@ spec:
         name: dynamic-scorer-token
     host: 'https://prometheus-k8s.openshift-monitoring.svc.cluster.local:9091'
     params:
-      query: 'min((((20*24) - (max(sum(kube_resourcequota{resource="requests.cpu", type="hard"}))) or on() vector(0)) / (20*24)) or (((20*8.4e+10) - (max(sum(kube_resourcequota{resource="requests.memory", type="hard"}))) or on() vector(0)) / (20*8.4e+10)))'
+      query: 'min(((20*24) - ((max(sum(kube_resourcequota{resource="requests.cpu", type="hard"}))) or on() vector(0))) / (20*24) or ((20*8.4e+10) - ((max(sum(kube_resourcequota{resource="requests.memory", type="hard"}))) or on() vector(0))) / (20*8.4e+10))'
       range: 3600
       step: 60
     path: /api/v1/query_range
@@ -337,16 +337,15 @@ Override via the `PROMETHEUS_QUERY` env var (see Deployment / ManifestWork) if y
 
 ```promql
 min(
-  (
-    ((20*24) - (max(sum(kube_resourcequota{resource="requests.cpu", type="hard"}))) or on() vector(0))
-    / (20*24)
-  )
+  ((20*24) - ((max(sum(kube_resourcequota{resource="requests.cpu", type="hard"}))) or on() vector(0))) / (20*24)
   or
-  (
-    ((20*8.4e+10) - (max(sum(kube_resourcequota{resource="requests.memory", type="hard"}))) or on() vector(0))
-    / (20*8.4e+10)
-  )
+  ((20*8.4e+10) - ((max(sum(kube_resourcequota{resource="requests.memory", type="hard"}))) or on() vector(0))) / (20*8.4e+10)
 )
 ```
 
 A score of **0** usually means no ResourceQuotas are present, or hard limits already fill the configured capacity budget.
+
+
+### Query window
+
+`/config` advertises a short Prometheus \`query_range\` window (default **120s**, step **15s**, scoring interval **15s**) so quota changes show up quickly. Override with \`PROM_RANGE_SEC\`, \`PROM_STEP_SEC\`, and \`SCORING_INTERVAL_SEC\`.

@@ -68,7 +68,7 @@ spec:
                     - name: PROMETHEUS_HOST
                       value: "https://thanos-querier.openshift-monitoring.svc:9091"
                     - name: PROMETHEUS_QUERY
-                      value: 'min((((20*24) - (max(sum(kube_resourcequota{resource="requests.cpu", type="hard"}))) or on() vector(0)) / (20*24)) or (((20*8.4e+10) - (max(sum(kube_resourcequota{resource="requests.memory", type="hard"}))) or on() vector(0)) / (20*8.4e+10)))'
+                      value: 'min(((20*24) - ((max(sum(kube_resourcequota{resource="requests.cpu", type="hard"}))) or on() vector(0))) / (20*24) or ((20*8.4e+10) - ((max(sum(kube_resourcequota{resource="requests.memory", type="hard"}))) or on() vector(0))) / (20*8.4e+10))'
                     - name: SCORE_NAME
                       value: cpu_mem_quota_pct_score
 

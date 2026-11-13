@@ -12,7 +12,7 @@ Run in order, or use `setup-all.sh` for the full sequence.
 | `03-deploy-scorer.sh` | Generates ManifestWorks, deploys quota-scorer, and applies `example-resourcequota.yaml` on each managed cluster |
 | `04-register-scorer.sh` | Applies DynamicScorer, DynamicScoringConfig, and `placement-quota-scorer.yaml` on the hub |
 | `05-verify.sh` | Checks pods, routes, configs, scores, and Placement decisions |
-| `06-demo.sh` | Demo helpers: `start`/`stop` large load-quota, `watch`/`scores`/`placement` |
+| `06-demo.sh` | Demo helpers: `start`/`stop` load-quota (40%±10 score points, opposite per cluster), `watch`/`scores`/`placement` |
 | `dashboard.sh` | Polls scores and writes JSON for the HTML dashboard |
 | `setup-all.sh` | Runs everything end-to-end |
 

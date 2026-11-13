@@ -41,15 +41,15 @@ curl -s $SCORER/config | python3 -m json.tool
 ## Beat 2 — Large quota shifts relative capacity
 
 ```bash
-bash scripts/06-demo.sh start cluster1
+bash scripts/06-demo.sh start
 bash scripts/06-demo.sh scores
 bash scripts/06-demo.sh watch
 ```
 
-> "Apply a large ResourceQuota on a cluster — that consumes headroom and drops its score. Cleanup:"
+> "Apply a ResourceQuota at ~40% of budget with random ±10 score-point sizing (opposite per cluster so scores diverge). Cleanup:"
 
 ```bash
-bash scripts/06-demo.sh stop cluster1
+bash scripts/06-demo.sh stop
 ```
 
 ## Commands cheat sheet
@@ -57,8 +57,8 @@ bash scripts/06-demo.sh stop cluster1
 ```bash
 bash scripts/06-demo.sh scores
 bash scripts/06-demo.sh watch
-bash scripts/06-demo.sh start cluster1
-bash scripts/06-demo.sh stop cluster1
+bash scripts/06-demo.sh start
+bash scripts/06-demo.sh stop
 bash scripts/06-demo.sh placement
 # Region comes from the `region` label (stamped from clusters.conf by scripts/06-demo.sh scores)
 oc get addonplacementscores -A -o custom-columns="CLUSTER:.metadata.namespace,REGION:.metadata.labels.region,NAME:.metadata.name,SCORE:.status.scores[0].value"

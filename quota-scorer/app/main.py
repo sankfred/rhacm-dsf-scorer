@@ -149,9 +149,15 @@ PROMETHEUS_HOST = os.getenv(
     "PROMETHEUS_HOST",
     "https://thanos-querier.openshift-monitoring.svc:9091",
 )
+# or vector(0) must wrap only the *usage* term. If it wraps (budget - usage),
+# an empty kube_resourcequota result becomes 0/budget → score 0 instead of 100.
 PROMETHEUS_QUERY = os.getenv(
     "PROMETHEUS_QUERY",
-    'min((((20*24) - (max(sum(kube_resourcequota{resource="requests.cpu", type="hard"}))) or on() vector(0)) / (20*24)) or (((20*8.4e+10) - (max(sum(kube_resourcequota{resource="requests.memory", type="hard"}))) or on() vector(0)) / (20*8.4e+10)))',
+    'min('
+    '((20*24) - ((max(sum(kube_resourcequota{resource="requests.cpu", type="hard"}))) or on() vector(0))) / (20*24)'
+    ' or '
+    '((20*8.4e+10) - ((max(sum(kube_resourcequota{resource="requests.memory", type="hard"}))) or on() vector(0))) / (20*8.4e+10)'
+    ')',
 )
 SCORE_NAME = os.getenv("SCORE_NAME", "cpu_mem_quota_pct_score")
 # Agents on every managed cluster must call the local Service — if this is
@@ -160,6 +166,10 @@ SCORING_HOST = os.getenv(
     "SCORING_HOST",
     "http://rhacm-scorer.dynamic-scoring.svc:8000",
 )
+# Short window so quota add/remove shows up quickly (agent still uses query_range).
+PROM_RANGE_SEC = int(os.getenv("PROM_RANGE_SEC", "120"))
+PROM_STEP_SEC = int(os.getenv("PROM_STEP_SEC", "15"))
+SCORING_INTERVAL_SEC = int(os.getenv("SCORING_INTERVAL_SEC", "15"))
 
 app = FastAPI()
 
@@ -202,8 +212,8 @@ async def get_config():
             "path": "/api/v1/query_range",
             "params": {
                 "query": PROMETHEUS_QUERY,
-                "range": 3600,
-                "step": 60,
+                "range": PROM_RANGE_SEC,
+                "step": PROM_STEP_SEC,
             },
         },
         "scoring": {
@@ -211,7 +221,7 @@ async def get_config():
             "path": "/scoring",
             "params": {
                 "name": SCORE_NAME,
-                "interval": 30,
+                "interval": SCORING_INTERVAL_SEC,
             },
         },
     }
