@@ -165,12 +165,18 @@ case "$ACTION" in
       -o jsonpath='{range .items[*].status.decisions[*]}{.clusterName}{"\n"}{end}' \
       | sed 's/^/  decided: /'
     ;;
+  fix-endpoints)
+    # Work around DSF rewriting scoringEndpoint to Thanos (agent 401s).
+    fix_scoring_endpoints
+    echo "Done. Re-check agents with: bash scripts/06-demo.sh scores"
+    ;;
   *)
-    echo "Usage: bash scripts/06-demo.sh [start|stop|watch|scores|placement] [cluster|all]"
+    echo "Usage: bash scripts/06-demo.sh [start|stop|watch|scores|placement|fix-endpoints] [cluster|all]"
     echo "  start [cluster|all]  — apply load-quota at 40%±10 score points (default: all; opposite jitter per cluster)"
     echo "  stop  [cluster|all]  — remove load-quota (default: all)"
     echo "  watch            — refresh score values every ${WATCH_INTERVAL}s"
     echo "  scores           — snapshot current scores"
     echo "  placement        — apply quota-scorer Placement (excludes local-cluster)"
+    echo "  fix-endpoints    — repair scoringEndpoint → local rhacm-scorer (fixes agent 401s)"
     ;;
 esac

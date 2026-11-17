@@ -60,6 +60,8 @@ bash scripts/06-demo.sh watch
 bash scripts/06-demo.sh start
 bash scripts/06-demo.sh stop
 bash scripts/06-demo.sh placement
+bash scripts/06-demo.sh fix-endpoints   # if agents log scoring 401 (DSF pointed them at Thanos)
 # Region comes from the `region` label (stamped from clusters.conf by scripts/06-demo.sh scores)
 oc get addonplacementscores -A -o custom-columns="CLUSTER:.metadata.namespace,REGION:.metadata.labels.region,NAME:.metadata.name,SCORE:.status.scores[0].value"
+oc describe placement -n dynamic-scoring quota-scorer-placement | grep Events -A 10
 ```

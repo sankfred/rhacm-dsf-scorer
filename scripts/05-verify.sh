@@ -12,6 +12,10 @@ CLUSTERS="${@:-$(cluster_names)}"
 
 echo "=== Step 5: Verify ==="
 
+# DSF Full sync can rewrite scoringEndpoint to Thanos (/scoring → 401).
+# Re-assert the in-cluster scorer Service before checking agents/scores.
+fix_scoring_endpoints
+
 echo ""
 echo "--- DSF Addon Status (hub) ---"
 oc get managedclusteraddon -A | grep dynamic-scoring || echo "No dynamic-scoring addons found"

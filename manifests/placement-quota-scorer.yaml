@@ -17,6 +17,8 @@ spec:
   predicates:
   - requiredClusterSelector:
       labelSelector:
+        matchLabels:
+          environment: prod
         matchExpressions:
         - key: local-cluster
           operator: DoesNotExist
