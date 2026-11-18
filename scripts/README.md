@@ -10,7 +10,7 @@ Run in order, or use `setup-all.sh` for the full sequence.
 | `01-build-and-push.sh` | Builds the quota-scorer image and pushes to Quay |
 | `02-install-addon.sh` | Helm-installs the DSF addon on the hub |
 | `03-deploy-scorer.sh` | Generates ManifestWorks, deploys quota-scorer, and applies `example-resourcequota.yaml` on each managed cluster |
-| `04-register-scorer.sh` | Applies DynamicScorer, DynamicScoringConfig, and `placement-quota-scorer.yaml` on the hub |
+| `04-register-scorer.sh` | Applies DynamicScorer, DynamicScoringConfig, Placement, and hub `exporter-hub.yaml` (`MODE=exporter`) |
 | `05-verify.sh` | Checks pods, routes, configs, scores, and Placement decisions |
 | `06-demo.sh` | Demo helpers: `start`/`stop` load-quota (40%±10 score points, opposite per cluster), `watch`/`scores`/`placement`, `fix-endpoints` |
 | *(lib.sh)* `fix_scoring_endpoints` | Work around DSF rewriting `scoringEndpoint` to Thanos (`/scoring` → agent 401). Also run from `04-register-scorer.sh`, `05-verify.sh`, and `06-demo.sh start` |

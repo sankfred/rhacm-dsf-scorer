@@ -38,12 +38,22 @@ echo "Applying quota-scorer Placement (excludes local-cluster)..."
 oc apply -f "$MANIFESTS_DIR/placement-quota-scorer.yaml"
 
 echo ""
+echo "Deploying hub AddOnPlacementScore exporter (MODE=exporter on :9000/metrics)..."
+oc apply -f "$MANIFESTS_DIR/exporter-hub.yaml"
+
+if oc get mco observability >/dev/null 2>&1; then
+  echo "Allowlisting exporter metric for ACM Observability Thanos..."
+  oc apply -f "$MANIFESTS_DIR/observability-metrics-custom-allowlist.yaml"
+fi
+
+echo ""
 echo "Repairing per-cluster scoringEndpoint (DSF may point agents at Thanos)..."
 # Give the hub controller a moment to sync ManifestWorks from /config
 sleep 15
 fix_scoring_endpoints
 
 echo ""
-echo "Done. DynamicScorer, DynamicScoringConfig, and Placement applied."
+echo "Done. DynamicScorer, DynamicScoringConfig, Placement, and exporter applied."
 echo "Hub pulls /config from the primary cluster Route; /config must advertise"
 echo "scoring.host=http://rhacm-scorer.dynamic-scoring.svc:8000 so each spoke scores locally."
+echo "Exporter metrics: oc -n addonplacementscore-exporter port-forward svc/addonplacementscore-exporter 9000"

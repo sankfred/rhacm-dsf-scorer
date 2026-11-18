@@ -236,12 +236,13 @@ Metric name:
 cpe_addonplacementscore_value
 
 Labels:
-- namespace
+- managedcluster (spoke / APS namespace; do not use `cluster` — ACM Observability owns that label)
 - placement
 - metric
+- datacenter, faultdomain, lob, sdlc (from namespace labels when present)
 
 Example:
-cpe_addonplacementscore_value{namespace="cluster1",placement="cpu-mem-quota-pct-score",metric="cpu_mem_quota_pct_score"} 99
+cpe_addonplacementscore_value{managedcluster="cluster1",placement="cpu-mem-quota-pct-score",metric="cpu_mem_quota_pct_score"} 99
 
 ## 🚀 Installation
 
@@ -252,38 +253,79 @@ podman build -t quota-scorer:latest .
 podman run quota-scorer:latest
 ```
 
-## Running the Scorer
-Local Execution:
+## Running the exporter
 
-_NOTE: ensure context is correct_
-```
-kubectl config current-context
-python exporter.py
+Same image as the scorer; set `MODE=exporter` (and `PORT=9000`).  
+Do **not** leave Helm leftovers like `{{ .Values.mode }}` in `MODE` — `main.py` treats those as unset and defaults to scorer.
+
+```bash
+# Hub deploy (preferred)
+oc apply -f manifests/exporter-hub.yaml
+
+# Or locally (hub kubecontext — needs APS API access)
+MODE=exporter PORT=9000 python main.py
 ```
 
-The service will be available at:
-
-```
-http://localhost:9000/metrics
-```
+Metrics: `http://localhost:9000/metrics`
 
 ## ✅ Verification
 
-Check pods:
-```
-kubectl get pods -n addonplacementscore-exporter
-```
-
-Check logs:
-```
-kubectl logs deployment/addonplacementscore-exporter -n addonplacementscore-exporter
-```
-
-Test metrics:
-```
-kubectl port-forward svc/addonplacementscore-exporter -n addonplacementscore-exporter 9000
+```bash
+oc get pods -n addonplacementscore-exporter
+oc logs deployment/addonplacementscore-exporter -n addonplacementscore-exporter
+oc -n addonplacementscore-exporter port-forward svc/addonplacementscore-exporter 9000
 curl localhost:9000/metrics
 ```
+
+## Prometheus scrape + Grafana
+
+`manifests/exporter-hub.yaml` includes a **ServiceMonitor** so OpenShift
+**user-workload monitoring** scrapes `:9000/metrics` every 30s.
+
+```bash
+oc apply -f manifests/exporter-hub.yaml
+oc get servicemonitor -n addonplacementscore-exporter
+```
+
+Confirm the target is up (hub):
+
+```bash
+# OpenShift console → Observe → Targets → filter addonplacementscore
+# Or query user-workload Prometheus:
+oc -n openshift-user-workload-monitoring exec -c prometheus prometheus-user-workload-0 -- \
+  curl -s http://localhost:9090/api/v1/query?query=cpe_addonplacementscore_value \
+  | python3 -m json.tool
+```
+
+PromQL for dashboards:
+
+```promql
+cpe_addonplacementscore_value{metric="cpu_mem_quota_pct_score",managedcluster!="local-cluster"}
+```
+
+Forward into ACM Observability with:
+
+```bash
+oc apply -f manifests/observability-metrics-custom-allowlist.yaml
+```
+
+ACM Grafana often blocks UI **Import**. Load the dashboard via ConfigMap
+instead (same mechanism as built-in ACM dashboards):
+
+```bash
+oc create configmap grafana-dashboard-dsf-quota-placement-scores \
+  --from-file=dsf-quota-placement-scores.json=manifests/grafana-dashboard-quota-scores.json \
+  -n open-cluster-management-observability \
+  --dry-run=client -o yaml \
+| oc label --local -f - general-folder=true --dry-run=client -o yaml \
+| oc apply -f -
+```
+
+Then open Grafana → folder **DSF** (or General) → **DSF Quota Placement Scores**.
+
+Datasource should be **Observatorium**. The PromQL above only returns data once
+`cpe_addonplacementscore_value` is collected into Observability Thanos (it is
+scraped by user-workload Prometheus today).
 
 ## 🛠️ Troubleshooting
 

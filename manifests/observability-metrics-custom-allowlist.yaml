@@ -1,0 +1,13 @@
+# Forward hub user-workload metrics into ACM Observability Thanos
+# (scraped by uwl-metrics-collector on the hub).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: observability-metrics-custom-allowlist
+  namespace: open-cluster-management-observability
+  labels:
+    app.kubernetes.io/part-of: rhacm-dsf-scorer
+data:
+  uwl_metrics_list.yaml: |
+    names:
+      - cpe_addonplacementscore_value

@@ -34,10 +34,13 @@ custom_api = client.CustomObjectsApi()
 # -----------------------------
 # Prometheus metric
 # -----------------------------
+# Use "managedcluster" — ACM Observability adds its own "cluster" label
+# (hub/local-cluster). Reusing "cluster" collapses all spoke scores into one
+# series when the UWL metrics-collector forwards into Thanos.
 gauge = Gauge(
     "cpe_addonplacementscore_value",
     "Addon Placement Score",
-    ["namespace", "datacenter", "faultdomain", "lob", "sdlc", "placement", "metric"]
+    ["managedcluster", "datacenter", "faultdomain", "lob", "sdlc", "placement", "metric"]
 )
 
 # -----------------------------
@@ -56,6 +59,11 @@ def discover_namespaces():
         for ns in ns_list:
             name = ns.metadata.name
             labels = ns.metadata.labels or {}
+
+            # Hub local-cluster is not a demo spoke — skip it.
+            if name == "local-cluster" or "local-cluster" in labels:
+                logging.debug(f"Skipping local-cluster namespace {name}")
+                continue
 
             datacenter = labels.get("datacenter", "unknown")
             faultdomain = labels.get("faultdomain", "unknown")
@@ -81,6 +89,10 @@ def collect():
     if not namespaces:
         logging.warning("No namespaces matched label selector")
         return
+
+    # Drop stale labelsets (e.g. local-cluster, renamed labels) so /metrics
+    # only exposes the current scrape set — avoids duplicate Grafana rows.
+    gauge.clear()
 
     for ns_data in namespaces:
         try:
@@ -132,7 +144,7 @@ def collect():
                         continue
 
                     logging.info(
-                        f"Metric collected: ns={ns}, datacenter={datacenter}, faultdomain={faultdomain}, lob={lob}, sdlc={sdlc}, "
+                        f"Metric collected: managedcluster={ns}, datacenter={datacenter}, faultdomain={faultdomain}, lob={lob}, sdlc={sdlc}, "
                         f"placement={placement}, metric={metric}, value={value}"
                     )
 
@@ -229,11 +241,29 @@ async def get_config():
 # -----------------------------
 # Main loop
 # -----------------------------
+def resolve_mode() -> str:
+    """Return 'exporter' or 'scorer'.
+
+    Helm charts often set MODE from {{ .Values.mode }}. If that template is left
+    unrendered in the image or Deployment, treat it as unset and default to scorer.
+    """
+    raw = os.getenv("MODE", "scorer")
+    if "{{" in raw or "}}" in raw:
+        logging.warning(
+            "MODE=%r looks like an unrendered Helm template; defaulting to scorer",
+            raw,
+        )
+        return "scorer"
+    mode = raw.strip().lower()
+    return mode if mode in ("exporter", "scorer") else "scorer"
+
+
 if __name__ == "__main__":
-    MODE = os.getenv("MODE")
+    MODE = resolve_mode()
+    logging.info(f"Starting quota-scorer in MODE={MODE}")
 
     if MODE == "exporter":
-        # Start Prometheus metrics server
+        # Hub-side AddOnPlacementScore → Prometheus metrics (/metrics).
         port = int(os.getenv("PORT", "9000"))
         logging.info(f"Starting AddOnPlacementScore exporter on :{port}")
         start_http_server(port)
@@ -242,7 +272,7 @@ if __name__ == "__main__":
             collect()
             time.sleep(30)
     else:
-    # Start FastAPI server
+        # Spoke-side FastAPI scoring API (/scoring, /config, /healthz).
         port = int(os.getenv("PORT", "8000"))
         ssl_certfile = os.getenv("SSL_CERT", None)
         ssl_keyfile = os.getenv("SSL_KEY", None)

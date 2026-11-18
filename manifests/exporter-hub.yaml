@@ -1,0 +1,121 @@
+# Hub-side AddOnPlacementScore Prometheus exporter (MODE=exporter).
+# Exposes cpe_addonplacementscore_value on :9000/metrics.
+# Image matches the spoke scorer; only MODE/PORT differ.
+#
+# MODE must be the literal "exporter". Do not leave Helm templates like
+# {{ .Values.mode }} here — they are not rendered by oc apply.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: addonplacementscore-exporter
+  labels:
+    app.kubernetes.io/part-of: rhacm-dsf-scorer
+    app.kubernetes.io/name: addonplacementscore-exporter
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: addonplacementscore-exporter
+  namespace: addonplacementscore-exporter
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: addonplacementscore-exporter
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["cluster.open-cluster-management.io"]
+    resources: ["addonplacementscores"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: addonplacementscore-exporter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: addonplacementscore-exporter
+subjects:
+  - kind: ServiceAccount
+    name: addonplacementscore-exporter
+    namespace: addonplacementscore-exporter
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: addonplacementscore-exporter
+  namespace: addonplacementscore-exporter
+  labels:
+    app: addonplacementscore-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: addonplacementscore-exporter
+  template:
+    metadata:
+      labels:
+        app: addonplacementscore-exporter
+    spec:
+      serviceAccountName: addonplacementscore-exporter
+      containers:
+        - name: exporter
+          image: quay.io/sfredenb/quota-scorer:latest
+          imagePullPolicy: Always
+          env:
+            - name: MODE
+              value: exporter
+            - name: PORT
+              value: "9000"
+          ports:
+            - name: metrics
+              containerPort: 9000
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: addonplacementscore-exporter
+  namespace: addonplacementscore-exporter
+  labels:
+    app: addonplacementscore-exporter
+    # Selected by ServiceMonitor below (OpenShift user-workload monitoring).
+    monitor: addonplacementscore-exporter
+spec:
+  selector:
+    app: addonplacementscore-exporter
+  ports:
+    - name: metrics
+      port: 9000
+      targetPort: metrics
+---
+# Scraped by openshift-user-workload-monitoring (enableUserWorkload: true).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: addonplacementscore-exporter
+  namespace: addonplacementscore-exporter
+  labels:
+    app: addonplacementscore-exporter
+    app.kubernetes.io/part-of: rhacm-dsf-scorer
+spec:
+  selector:
+    matchLabels:
+      monitor: addonplacementscore-exporter
+  namespaceSelector:
+    matchNames:
+      - addonplacementscore-exporter
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      scheme: http
