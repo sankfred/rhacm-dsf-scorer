@@ -1,5 +1,5 @@
 # Forward hub user-workload metrics into ACM Observability Thanos
-# (scraped by uwl-metrics-collector on the hub).
+# (hub APS exporter in addonplacementscore-exporter).
 apiVersion: v1
 kind: ConfigMap
 metadata:

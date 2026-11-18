@@ -277,6 +277,13 @@ oc -n addonplacementscore-exporter port-forward svc/addonplacementscore-exporter
 curl localhost:9000/metrics
 ```
 
+## Spoke-side `/metrics` (disabled)
+
+A commented reference implementation lives in `app/main.py` (search for
+"Spoke-side /metrics"). It is **not** enabled: on these SNOs, UWL + ACM
+`uwl-metrics-collector` exhausted memory and took managed clusters offline.
+Use the **hub** exporter instead (`manifests/exporter-hub.yaml`).
+
 ## Prometheus scrape + Grafana
 
 `manifests/exporter-hub.yaml` includes a **ServiceMonitor** so OpenShift

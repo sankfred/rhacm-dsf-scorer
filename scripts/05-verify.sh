@@ -47,11 +47,6 @@ for cluster in $CLUSTERS; do
   echo "  ConfigMap:"
   KUBECONFIG="$KUBECONFIG_FILE" oc get configmap dynamic-scoring-config -n dynamic-scoring 2>/dev/null && echo "    Present" || echo "    Not found (may take ~1 min)"
 
-  # Baseline example ResourceQuota (small quota should exist for non-zero scores;
-  # score 0 often means no quotas present or quota is at full capacity)
-  echo "  Example ResourceQuota:"
-  KUBECONFIG="$KUBECONFIG_FILE" oc get resourcequota demo-compute-quota -n quota-demo 2>/dev/null \
-    || echo "    Not found (apply manifests/example-resourcequota.yaml)"
 done
 
 echo ""

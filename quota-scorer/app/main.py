@@ -32,7 +32,7 @@ core_api = client.CoreV1Api()
 custom_api = client.CustomObjectsApi()
 
 # -----------------------------
-# Prometheus metric
+# Prometheus metric (hub MODE=exporter)
 # -----------------------------
 # Use "managedcluster" — ACM Observability adds its own "cluster" label
 # (hub/local-cluster). Reusing "cluster" collapses all spoke scores into one
@@ -185,6 +185,36 @@ SCORING_INTERVAL_SEC = int(os.getenv("SCORING_INTERVAL_SEC", "15"))
 
 app = FastAPI()
 
+# ---------------------------------------------------------------------------
+# Spoke-side /metrics (DISABLED on SNO demos — prefer hub MODE=exporter)
+# ---------------------------------------------------------------------------
+# Publishing cpe_addonplacementscore_value from each managed-cluster scorer
+# needs OpenShift user-workload monitoring + ACM uwl-metrics-collector on the
+# spoke. That extra memory tipped these SNOs into etcd/API failures. Keep the
+# hub AddOnPlacementScore exporter (manifests/exporter-hub.yaml) as the
+# Observability source. Uncomment below only on clusters with spare RAM.
+#
+# from fastapi import Response
+# from prometheus_client import CONTENT_TYPE_LATEST, CollectorRegistry, generate_latest
+#
+# CLUSTER_NAME = os.getenv("CLUSTER_NAME", os.getenv("HOSTNAME", "unknown"))
+# spoke_registry = CollectorRegistry()
+# spoke_score = Gauge(
+#     "cpe_addonplacementscore_value",
+#     "Quota headroom score computed by the local scorer",
+#     ["managedcluster", "placement", "metric"],
+#     registry=spoke_registry,
+# )
+#
+# def _record_spoke_score(score: float) -> None:
+#     placement = os.getenv("SCORE_PLACEMENT", "cpu-mem-quota-pct-score")
+#     spoke_score.labels(CLUSTER_NAME, placement, SCORE_NAME).set(score)
+#
+# @app.get("/metrics")
+# async def metrics():
+#     return Response(generate_latest(spoke_registry), media_type=CONTENT_TYPE_LATEST)
+# ---------------------------------------------------------------------------
+
 @app.post("/scoring", response_model=ScoringResponse)
 async def scoring_timeseries(payload: ScoringPayload, request: Request):
   # print(payload.data, flush=True)
@@ -201,6 +231,7 @@ async def scoring_timeseries(payload: ScoringPayload, request: Request):
               continue
           latest = float(series.values[-1][1])
           results.append({"metric": series.metric, "score": 100 * latest})
+          # _record_spoke_score(100 * latest)  # spoke /metrics — see comment block above
 
       except Exception as e:
           logging.error(f"Error processing series: {e}")
@@ -273,6 +304,7 @@ if __name__ == "__main__":
             time.sleep(30)
     else:
         # Spoke-side FastAPI scoring API (/scoring, /config, /healthz).
+        # Metrics for Grafana come from the hub exporter, not this process.
         port = int(os.getenv("PORT", "8000"))
         ssl_certfile = os.getenv("SSL_CERT", None)
         ssl_keyfile = os.getenv("SSL_KEY", None)

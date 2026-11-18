@@ -71,6 +71,14 @@ spec:
                       value: 'min(((20*24) - ((max(sum(kube_resourcequota{resource="requests.cpu", type="hard"}))) or on() vector(0))) / (20*24) or ((20*8.4e+10) - ((max(sum(kube_resourcequota{resource="requests.memory", type="hard"}))) or on() vector(0))) / (20*8.4e+10))'
                     - name: SCORE_NAME
                       value: cpu_mem_quota_pct_score
+                    - name: SCORING_HOST
+                      value: "http://rhacm-scorer.dynamic-scoring.svc:8000"
+                  readinessProbe:
+                    httpGet:
+                      path: /healthz
+                      port: 8000
+                    initialDelaySeconds: 5
+                    periodSeconds: 10
 
       - apiVersion: v1
         kind: Service
@@ -84,6 +92,10 @@ spec:
             - protocol: TCP
               port: 8000
               targetPort: 8000
+
+      # Spoke ServiceMonitor / UWL scrape intentionally omitted — SNO memory.
+      # Prefer hub manifests/exporter-hub.yaml for cpe_addonplacementscore_value.
+      # See commented spoke /metrics block in quota-scorer/app/main.py.
 
       - apiVersion: route.openshift.io/v1
         kind: Route
