@@ -1,6 +1,6 @@
 # ResourceQuota template used by `bash scripts/06-demo.sh start`.
 # The demo script randomly sizes this to ~30% or ~50% of the scorer budget
-# (40% ± 10 score points of headroom) so clusters can show different scores.
+# (40% ± 10 score points of remaining quota) so clusters can show different scores.
 #
 # Scorer budget: 20*24 = 480 CPU, ~1680Gi memory.
 apiVersion: v1

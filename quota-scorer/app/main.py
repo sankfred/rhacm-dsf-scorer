@@ -201,7 +201,7 @@ app = FastAPI()
 # spoke_registry = CollectorRegistry()
 # spoke_score = Gauge(
 #     "cpe_addonplacementscore_value",
-#     "Quota headroom score computed by the local scorer",
+#     "Remaining quota score computed by the local scorer",
 #     ["managedcluster", "placement", "metric"],
 #     registry=spoke_registry,
 # )
@@ -225,17 +225,19 @@ async def scoring_timeseries(payload: ScoringPayload, request: Request):
   results = []
   for series in data:
       # Use the latest sample — max() over the hour kept scores sticky after
-      # quota changes (old high headroom samples dominated for up to `range`).
+      # quota changes (old high remaining quota samples dominated for up to `range`).
       try:
           if not series.values:
               continue
           latest = float(series.values[-1][1])
-          results.append({"metric": series.metric, "score": 100 * latest})
-          # _record_spoke_score(100 * latest)  # spoke /metrics — see comment block above
+          score = 100 * latest
+          results.append({"metric": series.metric, "score": score})
+          # _record_spoke_score(score)  # spoke /metrics — see comment block above
 
       except Exception as e:
           logging.error(f"Error processing series: {e}")
 
+  logging.info("Scoring result: %s", results)
   print(results, flush=True)
 
   return {"results": results}
@@ -248,7 +250,7 @@ async def healthcheck():
 async def get_config():
     return {
         "name": SCORE_NAME,
-        "description": "CPU/memory resourcequota headroom score (higher = more quota remaining)",
+        "description": "CPU/memory remaining resourcequota score (higher = more available capacity)",
         "source": {
             "type": "Prometheus",
             "host": PROMETHEUS_HOST,

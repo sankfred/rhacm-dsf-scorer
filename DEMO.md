@@ -2,7 +2,7 @@
 
 ## The story
 
-ACM Placement can prefer clusters with more capacity. This demo shows a custom DSF scorer that ranks managed clusters by **resourcequota headroom** — how much CPU/memory request quota remains — and publishes those scores for Placement.
+ACM Placement can prefer clusters with more capacity. This demo shows a custom DSF scorer that ranks managed clusters by **remaining resourcequota** (available capacity) — how much CPU/memory request quota remains — and publishes those scores for Placement.
 
 ## Setup
 
@@ -36,7 +36,7 @@ curl -s $SCORER/config | python3 -m json.tool
 2. **Add-ons** — show `dynamic-scoring` installed
 3. **Dashboard** — live `cpu_mem_quota_pct_score` bars
 
-> "Both clusters publish quota headroom scores. Higher means more remaining request quota. Placement can prefer the cluster with greater capacity."
+> "Both clusters publish remaining quota scores. Higher means more available capacity. Placement can prefer the cluster with greater capacity."
 
 ## Beat 2 — Large quota shifts relative capacity
 

@@ -316,6 +316,15 @@ Forward into ACM Observability with:
 oc apply -f manifests/observability-metrics-custom-allowlist.yaml
 ```
 
+ACM `MultiClusterObservability` defaults `observabilityAddonSpec.interval` to
+**300** (seconds). That alone makes Grafana lag ~5 minutes behind APS. For the
+demo, set it to **30**:
+
+```bash
+oc patch mco observability --type=merge \
+  -p '{"spec":{"observabilityAddonSpec":{"interval":30}}}'
+```
+
 ACM Grafana often blocks UI **Import**. Load the dashboard via ConfigMap
 instead (same mechanism as built-in ACM dashboards):
 
@@ -368,7 +377,7 @@ ratio = (budget − sum of ResourceQuota hard limits) / budget
 
 So with the example quota (`48` CPU / `96Gi`):
 
-- CPU headroom ≈ `(480 − 48) / 480` ≈ **0.90** → score **~90**
+- CPU remaining quota ≈ `(480 − 48) / 480` ≈ **0.90** → score **~90**
 
 ### What `20` is
 

@@ -2,7 +2,7 @@
 
 Custom scoring plugin for the [OCM Dynamic Scoring Framework](https://github.com/open-cluster-management-io/dynamic-scoring-framework) (DSF) on Red Hat Advanced Cluster Management.
 
-Scores managed clusters by **resourcequota headroom** (CPU/memory requests remaining vs a configured capacity budget). DSF publishes those scores as `AddOnPlacementScores` so Placement can prefer clusters with more available quota.
+Scores managed clusters by **remaining resourcequota** / available capacity (CPU/memory requests remaining vs a configured capacity budget). DSF publishes those scores as `AddOnPlacementScores` so Placement can prefer clusters with more available capacity.
 
 Based on the [augustrh/rhacm-dsf-scorer](https://github.com/augustrh/rhacm-dsf-scorer) demo layout, adapted to the **quota-scorer** implementation under `quota-scorer/`.
 
@@ -36,7 +36,7 @@ Add more spokes in `clusters.conf` as `clusterN:<region>`; each gets the same ag
 
 1. The DSF agent on each managed cluster queries Prometheus with a resourcequota PromQL expression
 2. Agent POSTs the time series to the scorer `/scoring` endpoint
-3. Scorer returns a 0–100 score (`cpu_mem_quota_pct_score`) — higher means more quota headroom
+3. Scorer returns a 0–100 score (`cpu_mem_quota_pct_score`) — higher means more remaining quota (available capacity)
 4. Agent publishes an `AddOnPlacementScore` on the hub
 5. Placement uses the scores to pick the best cluster
 

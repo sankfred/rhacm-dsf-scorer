@@ -95,4 +95,4 @@ done
 echo ""
 echo "=== Scorer deployment complete ==="
 echo "Generated manifests are in $GENERATED_DIR (not committed to git)."
-echo "Note: with no ResourceQuotas, scores approach 100 (full headroom vs the scorer budget)."
+echo "Note: with no ResourceQuotas, scores approach 100 (full remaining quota vs the scorer budget)."

@@ -4,20 +4,29 @@ metadata:
   name: quota-scorer
   namespace: open-cluster-management
 spec:
-  description: CPU/memory resourcequota headroom score (higher = more quota remaining)
-  configURL: http://rhacm-scorer-dynamic-scoring.apps.cluster1.sandbox2096.opentlc.com/config
-  configSyncMode: Full
+  description: CPU/memory remaining resourcequota score (higher = more available capacity)
+  # None: do not pull /config; use source.params / scoring.* from this CR.
+  configSyncMode: None
+  configURL: http://dummy.dynamic-scoring.svc.cluster.local:8000/config
   location: Internal
   scoreDestination: AddOnPlacementScore
   scoreDimensionFormat: "${scoreName}"
   source:
+    type: Prometheus
     host: https://thanos-querier.openshift-monitoring.svc:9091
     path: /api/v1/query_range
     auth:
       tokenSecretRef:
         name: prometheus-token
         key: token
+    params:
+      query: 'min(((20*24) - ((max(sum(kube_resourcequota{resource="requests.cpu", type="hard"}))) or on() vector(0))) / (20*24) or ((20*8.4e+10) - ((max(sum(kube_resourcequota{resource="requests.memory", type="hard"}))) or on() vector(0))) / (20*8.4e+10))'
+      range: 120
+      step: 15
   scoring:
-    # Per-cluster in-cluster Service (synced from /config). Do not point at a single cluster Route.
+    # Per-cluster in-cluster Service. Do not point at a single cluster Route.
     host: http://rhacm-scorer.dynamic-scoring.svc:8000
     path: /scoring
+    params:
+      name: cpu_mem_quota_pct_score
+      interval: 15

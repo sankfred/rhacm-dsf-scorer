@@ -1,6 +1,7 @@
 #!/bin/bash
 # Step 5: Register the scorer with DSF on the hub
-# Updates configURL in dynamicscorer.yaml to point to the first cluster's Route
+# PromQL / scoring: manifests/dynamicscorer.yaml (source.params, scoring.*).
+# With configSyncMode: None, configURL may be a dummy placeholder — do not rewrite it.
 # Usage: bash scripts/04-register-scorer.sh [primary-cluster]
 # Default: first cluster from clusters.conf
 
@@ -11,24 +12,10 @@ source "$SCRIPT_DIR/lib.sh"
 
 PRIMARY="${1:-$(first_cluster)}"
 MANIFESTS_DIR="$REPO_ROOT/manifests"
-KUBECONFIG_FILE="/tmp/${PRIMARY}-kubeconfig.yaml"
 
 echo "=== Step 4: Register Scorer on Hub ==="
-echo "Primary cluster for configURL: $PRIMARY"
-
-# Get apps domain for configURL
-if [ -f "$KUBECONFIG_FILE" ]; then
-  APPS_DOMAIN=$(KUBECONFIG="$KUBECONFIG_FILE" \
-    oc get ingress.config.openshift.io cluster -o jsonpath='{.spec.domain}' 2>/dev/null)
-  CONFIG_URL="http://rhacm-scorer-dynamic-scoring.${APPS_DOMAIN}/config"
-  echo "configURL: $CONFIG_URL"
-
-  # Update dynamicscorer.yaml
-  sed -i.bak "s|configURL: .*|configURL: ${CONFIG_URL}|g" "$MANIFESTS_DIR/dynamicscorer.yaml"
-  rm -f "$MANIFESTS_DIR/dynamicscorer.yaml.bak"
-else
-  echo "WARNING: $KUBECONFIG_FILE not found, using existing configURL in dynamicscorer.yaml"
-fi
+echo "Primary cluster (reference): $PRIMARY"
+echo "Applying DynamicScorer from manifests/dynamicscorer.yaml (no configURL rewrite)."
 
 oc apply -f "$MANIFESTS_DIR/dynamicscorer.yaml"
 oc apply -f "$MANIFESTS_DIR/dynamicscoringconfig.yaml"
@@ -48,12 +35,11 @@ fi
 
 echo ""
 echo "Repairing per-cluster scoringEndpoint (DSF may point agents at Thanos)..."
-# Give the hub controller a moment to sync ManifestWorks from /config
 sleep 15
 fix_scoring_endpoints
 
 echo ""
 echo "Done. DynamicScorer, DynamicScoringConfig, Placement, and exporter applied."
-echo "Hub pulls /config from the primary cluster Route; /config must advertise"
+echo "PromQL: DynamicScorer.spec.source.params.query"
 echo "scoring.host=http://rhacm-scorer.dynamic-scoring.svc:8000 so each spoke scores locally."
 echo "Exporter metrics: oc -n addonplacementscore-exporter port-forward svc/addonplacementscore-exporter 9000"

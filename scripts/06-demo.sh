@@ -42,7 +42,7 @@ print_scores() {
 render_load_quota_manifest() {
   local out="$1" jitter_score="$2"
   local pct cpu mem limits_cpu limits_mem
-  # 40% baseline; jitter_score is +10 or -10 applied to resulting headroom score
+  # 40% baseline; jitter_score is +10 or -10 applied to resulting remaining quota score
   pct=$((40 - jitter_score))
   cpu=$((BUDGET_CPU * pct / 100))
   mem=$((BUDGET_MEM_GI * pct / 100))

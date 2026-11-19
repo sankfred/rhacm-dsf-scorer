@@ -20,7 +20,7 @@
   "panels": [
     {
       "datasource": "$datasource",
-      "description": "Resourcequota headroom score per managed cluster (higher = more remaining quota).",
+      "description": "Remaining resourcequota score per managed cluster (higher = more available capacity).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -92,7 +92,7 @@
           "refId": "A"
         }
       ],
-      "title": "Quota headroom score by cluster",
+      "title": "Remaining quota by cluster",
       "type": "timeseries"
     },
     {
